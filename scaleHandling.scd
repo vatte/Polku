@@ -4,7 +4,8 @@ s.boot
 //Arduino Communication:
 SerialPort.listDevices
 
-p = SerialPort("/dev/tty.usbmodem621", baudrate: 9600, crtscts: true);
+//p = SerialPort("/dev/tty.usbmodem621", baudrate: 9600, crtscts: true);
+p = SerialPort("/dev/tty.usbmodem441", baudrate: 9600, crtscts: true);
 
 (
 r= Routine({
@@ -16,6 +17,7 @@ r= Routine({
                 str= str++byte.asAscii;
             });
             res = str.asInteger;
+			//res.postln;
 			~updatedata.value(0, res);
         });
     };
@@ -31,11 +33,12 @@ p.close;
 
 (
 ~nScales = 1;
-~nPrevValues = 50;
+~nPrevValues = 2;
 ~iCurrVal = 0;
 ~allscales = [Array.fill(~nPrevValues, {0})];
-~minScaleVal = 50;
+~minScaleVal = 100;
 ~maxIdDiff = 20;
+~maxValDiff = 2;
 ~nPrevIds = 6; //how many id's are stored
 ~iCurrId = 0;
 ~nIds = 6; // how many different ids are there
@@ -57,7 +60,11 @@ p.close;
 			{ color = [0, 0, 0]; },
 			{ color = ~colors[id]; }
 		);
+		~idsAtScales[index].postln;
+		~allIds[~idsAtScales[index]].postln;
+
 		id.postln;
+		~allIds[id].postln;
 		~idsAtScales[index] = id;
 		p.putAll("I" ++ index ++ " " ++ color[0] ++ " " ++ color[1] ++ color[2]); //writes to arduino
 	});
@@ -66,12 +73,11 @@ p.close;
 )
 
 
-~identify.value(0)
 
 (
 ~identify = { | index |
 	var val = ~allscales[index].mean;
-	if( (val > ~minScaleVal) && ((~allscales[index].maxItem - ~allscales[index].minItem) < (2 * ~maxIdDiff)),
+	if( (val > ~minScaleVal) && ((~allscales[index].maxItem - ~allscales[index].minItem) < ~maxValDiff),
 		{
 			//stabile value
 			var minmatch = inf;

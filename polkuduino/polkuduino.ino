@@ -4,6 +4,9 @@ const int n_scales = 1;
 const int n_leds = 5;
 const int ledPins [] = { A1 };
 const int scalePins [] = { A0 };
+const float filter = 0.9;
+const int looptime = 10;
+
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(n_leds, ledPins[0], NEO_GRB + NEO_KHZ800);
 
@@ -23,8 +26,12 @@ void setup() {
 }
 
 void loop() {
-  readValue = readValue*0.9 + analogRead(scalePins[0]) * 0.1;
+  long timer = millis();
+  
+  readValue = readValue*filter + analogRead(scalePins[0]) * (1.0 - filter);
   Serial.println(int(readValue));
+  
+  //Serial.println(analogRead(A0));
   
   if(Serial.available() > 0) {
     char prefix = Serial.read();
@@ -40,5 +47,8 @@ void loop() {
     }
   }
   
-  delay(1);
+  long time = millis() - timer;
+  if(time < looptime) {
+    delay(looptime-time);
+  }
 }
