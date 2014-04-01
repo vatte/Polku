@@ -1,58 +1,70 @@
-s.boot
-
-
-//Arduino Communication:
-SerialPort.listDevices
-
-//p = SerialPort("/dev/tty.usbmodem621", baudrate: 9600, crtscts: true);
-p = SerialPort("/dev/tty.usbmodem441", baudrate: 9600, crtscts: true);
-
-(
-r= Routine({
-	var byte, str, res;
-    inf.do{|i|
-        if(p.read==10, {
-            str = "";
-            while({byte = p.read; byte !=13 }, {
-                str= str++byte.asAscii;
-            });
-            res = str.asInteger;
-			//res.postln;
-			~updatedata.value(0, res);
-        });
-    };
-}).play;
-)
 
 r.stop;
 p.close;
 
+~allscales[1][(~iCurrVal+1)%~nPrevValues] - ~allscales[1][~iCurrVal]
 
+~allscales
 
 //Scale-logic
-
 (
-~nScales = 1;
-~nPrevValues = 2;
-~iCurrVal = 0;
-~allscales = [Array.fill(~nPrevValues, {0})];
-~minScaleVal = 100;
+
+//VARIABLES
+~nScales = 6;
+~nPrevValues = 10;
+~minScaleVal = 150;
 ~maxIdDiff = 20;
-~maxValDiff = 2;
+~maxValDiff = 5;
 ~nPrevIds = 6; //how many id's are stored
-~iCurrId = 0;
 ~nIds = 6; // how many different ids are there
+~colors = [ [120, 0, 0], [0, 120, 0], [0, 0, 120], [60, 60, 0], [60, 0, 60], [0, 60, 60] ];
+
+
+~iCurrVal = 0;
+~iCurrId = 0;
+~allscales = Array.fill(~nPrevValues, {0}) ! ~nScales;
+~calibratedScales = Array.fill(~nPrevValues, {0}) ! ~nScales;
 ~allIds = Array.fill(~nPrevIds, {inf});
 ~idsAtScales = Array.fill(~nScales, {-1});
 
-~colors = [ [120, 0, 0], [0, 120, 0], [0, 0, 120], [60, 60, 0], [60, 0, 60], [0, 60, 60] ];
-)
+~minScales = 0 ! ~nScales;
+~calibrationScales = 1 ! ~nScales;
 
-(
+
+
+//FUNCTIONS
+
+~colorToScale = { | index, color |
+	var str;
+	str = "I" ++ " " ++ index ++ " " ++ color[0] ++ " " ++ color[1] ++ " " ++ color[2];
+	p.putAll(str); //writes to arduino
+};
+
+~stableValue = { | index |
+	var stable = false;
+	(~nPrevValues - 3).do { | i |
+		var d1, d2;
+		d1 = ~allscales[index][(~iCurrVal + i + 1)%~nPrevValues] - ~allscales[index][(~iCurrVal + i + 2)%~nPrevValues];
+		d2 = ~allscales[index][(~iCurrVal + i + 2)%~nPrevValues] - ~allscales[index][(~iCurrVal + i + 3)%~nPrevValues];
+		if(((d1 < 0) != (d2 < 0)) || d1 == 0 || d2 == 0, {
+			stable = true;
+		});
+	};
+	//stable.postln;
+	stable.value;
+	//abs(~allscales[index][(~iCurrVal+1)%~nPrevValues] - ~allscales[index][~iCurrVal]) < ~maxValDiff;
+};
+
+
 ~updatedata = { | index, value |
+	if(value != nil, {
+		~calibratedScales[index][~iCurrVal] = (value - ~minScales[index]) / (~calibrationScales[index] - ~minScales[index]);
+		~allscales[index][~iCurrVal] = value;
+	});
+
+	/*
 	var id = ~identify.value(index);
 	~allscales[index][~iCurrVal] = value;
-	~iCurrVal = (~iCurrVal + 1) % ~nPrevValues;
 
 	if( ~idsAtScales[index] != id, {
 		var color;
@@ -66,17 +78,17 @@ p.close;
 		id.postln;
 		~allIds[id].postln;
 		~idsAtScales[index] = id;
-		p.putAll("I" ++ index ++ " " ++ color[0] ++ " " ++ color[1] ++ color[2]); //writes to arduino
-	});
+
+		~colorToScale.value(index, color);
+	});*/
 
 };
-)
 
 
 
-(
 ~identify = { | index |
 	var val = ~allscales[index].mean;
+	//if(index == 0, {val.postln;});
 	if( (val > ~minScaleVal) && ((~allscales[index].maxItem - ~allscales[index].minItem) < ~maxValDiff),
 		{
 			//stabile value
@@ -101,6 +113,36 @@ p.close;
 		}
 	);
 }
+
+)
+
+
+
+//Arduino communication
+//p = SerialPort("/dev/tty.usbmodem621", baudrate: 9600, crtscts: true);
+//p = SerialPort("/dev/tty.usbmodem441", baudrate: 9600, crtscts: true);
+p = SerialPort("/dev/tty.usbmodemfa131", baudrate: 57600, crtscts: true);
+
+//A routine for handling the arduino input data
+(
+r= Routine({
+	var byte, str, res;
+    inf.do{|i|
+        if(p.read==10, {
+            str = "";
+            while({byte = p.read; byte !=13 }, {
+                str= str++byte.asAscii;
+            });
+			res = str.split($,).asInteger;
+		    //res.postln;
+			~iCurrVal = (~iCurrVal + 1) % ~nPrevValues;
+			~nScales.do{ | i |
+				~updatedata.value(i, res[i]);
+
+			};
+        });
+    };
+}).play;
 )
 
 
@@ -113,8 +155,87 @@ p.close;
 
 
 
+//Scale calibration
+
+~calibrateScales.play;
+~calibrateScales.stop;
+~calibrateScales.reset;
+
+(
+~calibrateScales = Routine({
+	~nScales.do { | i |
+		var calibrated = false;
+		i.postln;
+		~minScales[i] = ~allscales[i].mean;
+		~colorToScale.value(i, [255, 0, 0]);
+		while({ calibrated.not }, {
+			if(~allscales[i].mean > ~minScaleVal && ~stableValue.value(i), {
+				i.postln;
+				~calibrationScales[i] = ~allscales[i].mean;
+				~colorToScale.value(i, [0, 0, 0]);
+				calibrated = true;
+			});
+			0.01.wait;
+		});
+		0.1.wait;
+	};
+	0.5.wait;
+	5.do {
+		8.do { |i|
+			~colorToScale.value(i, [0, 0, 255]);
+			//0.05.wait;
+		};
+		0.5.wait;
+		8.do { |i|
+			~colorToScale.value(i, [0, 0, 0]);
+			//0.05.wait;
+		};
+		0.5.wait;
+	};
+});
+)
+
+
+
+
+
+
+
+
+
 /******************************************************************************/
 //testing---stuff
+
+SerialPort.listDevices
+
+
+
+(
+{
+8.do { |i|
+	~colorToScale.value(i, [0, 0, 0]);
+	0.1.wait;
+}
+}.fork;
+)
+
+
+(
+{
+	100.do {
+		~nScales.do { |i|
+			~calibratedScales[i].mean.post;
+			" ".post;
+		};
+		"".postln;
+		0.5.wait;
+	};
+}.fork;
+)
+
+
+~colorToScale.value(3, [0, 0, 0]);
+~colorToScale.value(3, [0, 255, 0]);
 
 
 (
@@ -128,7 +249,28 @@ fork{
 
 
 
+(
+d=Routine ( {
+	10.do { | i |
+		i.postln;
+	}
+});
+)
+d.play;
+d.reset;
 
+(
+f = { |argument = 0|
+{
+8.do { |i|
+	(i*argument).postln;
+	0.2.wait;
+}
+}.fork;
+};
+)
+
+f.value(5);
 
 
 (
@@ -139,6 +281,8 @@ SynthDef(\sinosc, { |amp=0.1, freq = 440, bus = 0|
 }).add;
 )
 
+
+10%6
 
 ~allscales
 

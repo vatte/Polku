@@ -1,0 +1,18 @@
+#N canvas 0 22 450 300 10;
+#X obj 87 132 expr if(abs($f2-$f1) < 1 \, 1 - abs($f2-$f1) \, 0);
+#X obj 306 71 \$1;
+#X obj 291 26 loadbang;
+#X obj 86 38 inlet;
+#X obj 87 193 line~;
+#X msg 87 162 \$1 10;
+#X obj 19 41 inlet~;
+#X obj 77 267 outlet~;
+#X obj 76 236 *~;
+#X connect 0 0 5 0;
+#X connect 1 0 0 1;
+#X connect 2 0 1 0;
+#X connect 3 0 0 0;
+#X connect 4 0 8 1;
+#X connect 5 0 4 0;
+#X connect 6 0 8 0;
+#X connect 8 0 7 0;
