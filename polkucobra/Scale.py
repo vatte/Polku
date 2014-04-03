@@ -5,7 +5,8 @@ import time
 
 class Scale:
 	def __init__(self):
-		self.port = serial.Serial("/dev/tty.usbmodemfd121", 57600)
+		#self.port = serial.Serial("/dev/tty.usbmodemfd121", 57600)
+		self.port = serial.Serial("/dev/tty.usbmodem441", 57600)
 		#self.port = serial.Serial("/dev/tty.usbmodemfd1221", 57600)
 
 		#constant variables:

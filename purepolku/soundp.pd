@@ -1,0 +1,23 @@
+#N canvas 460 142 402 421 10;
+#X obj 44 257 tabplay~;
+#X obj 44 114 inlet;
+#X obj 86 114 inlet;
+#X obj 44 284 outlet~;
+#X obj 131 114 inlet;
+#X obj 86 136 pack f f;
+#X text 44 67 first inlet plays from beginning \, second sets id \,
+thirds sets sound;
+#X obj 32 225 t b b;
+#X msg 86 163 set id\$1s\$2;
+#X obj 88 197 list;
+#X obj 88 222 route list;
+#X connect 0 0 3 0;
+#X connect 1 0 7 0;
+#X connect 2 0 5 0;
+#X connect 4 0 5 1;
+#X connect 5 0 8 0;
+#X connect 7 0 0 0;
+#X connect 7 1 9 0;
+#X connect 8 0 9 1;
+#X connect 9 0 10 0;
+#X connect 10 0 0 0;

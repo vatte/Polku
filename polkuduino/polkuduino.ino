@@ -67,8 +67,8 @@ void loop() {
       analogRead(scalePins[i]);
       delay(10);
     }*/
-    //analogRead(scalePins[i]);
-    //delay(10);
+    analogRead(scalePins[i]);
+    delay(10);
     
     readValue[i] = readValue[i] * filter + analogRead(scalePins[i]) * (1.0 - filter);
     Serial.print(int(readValue[i]));
