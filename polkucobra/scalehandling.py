@@ -37,8 +37,8 @@ print("serving")
 while True:
 	
 	if(not calibrationStarted and time.time() - timer > 5):
-	#		timer = time.time()
-	#		scale.changeColor(randint(0,5), [randint(0,255), randint(0,255), randint(0,255)])
+		timer = time.time()
+		#scale.changeColor(randint(0,5), [randint(0,255), randint(0,255), randint(0,255)])
 		calibrationStarted = True
 		#scale.startCalibration()
 		scale.loadCalibrationFile("calibration.txt")
@@ -50,11 +50,11 @@ while True:
 		val =  scale.calibratedScales[i][-1]
 		#val = scale.idsAtScales[i]
 		oscMsg.add_arg(scale.idsAtScales[i])
-		print("{1}\t{0:.2f}".format(val, scale.idsAtScales[i]), end = "\t")
+		#print("{1}\t{0:.2f}".format(val, scale.idsAtScales[i]), end = "\t")
 		#print (val, end="\t")
 		#a = scale.isStable(i, 10)
 		#print scale.isStable(i), "\t",
-	print()
+	#print()
 	try:
 		msg = oscMsg.build()
 		client.send(msg)

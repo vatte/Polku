@@ -11,13 +11,11 @@ class Scale:
 
 		#constant variables:
 		self.nScales = 6
-		self.nPrevValues = 200
-		self.minCalibratedScaleVal = 0.1
+		self.nPrevValues = 50
+		self.minCalibratedScaleVal = 0.15
 		self.maxIdDiff = 0.1
-		self.nPrevIds = 6
-		self.nIds = 6
-		self.stableRange = 2
-		self.stableTolerance = 50
+		self.nPrevIds = 15
+		self.nIds = 3
 		self.colors = [ [120, 0, 0], [0, 120, 0], [0, 0, 120], [60, 60, 0], [60, 0, 60], [0, 60, 60] ]
 		
 		#class variables:
@@ -26,8 +24,10 @@ class Scale:
 		self.allScales = [ [0] * self.nPrevValues for i in range(self.nScales) ]
 		self.calibratedScales = [ [0] * self.nPrevValues for i in range(self.nScales) ]
 		self.filteredScales = [ [0] * self.nPrevValues for i in range(self.nScales) ]
-		self.allIds = [inf] * self.nPrevIds
-		#self.allIds = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3] 
+		#self.allIds = [inf] * self.nPrevIds
+		
+		self.allIds = [i*0.1+0.2 for i in range(self.nPrevIds)] 
+
 		self.idsAtScales = [-1] * self.nScales
 		#calibration variables:
 		self.calibratingScale = -1
@@ -60,15 +60,15 @@ class Scale:
 				if ( diff < self.maxIdDiff and diff < mindiff):
 					mindiff = diff
 					id = i
-			if (id == -1):
-				self.allIds[self.iCurrId] = calibratedValue
-				id = self.iCurrId
-				self.iCurrId = (self.iCurrId + 1) % self.nPrevIds
-			else:
-				self.allIds[id] = calibratedValue
+			#if (id == -1):
+				#self.allIds[self.iCurrId] = calibratedValue
+				#id = self.iCurrId
+				#self.iCurrId = (self.iCurrId + 1) % self.nPrevIds
+			#else:
+				#self.allIds[id] = calibratedValue
 			return (id % self.nIds)
 		elif ( min(self.calibratedScales[index]) < self.minCalibratedScaleVal ):
-			return -1
+                        return -1
 		else:
 			return self.idsAtScales[index]
 				
@@ -84,6 +84,8 @@ class Scale:
 			for subStr in strArr:
 				val = int(subStr)
 				valArr.append(val)
+		except KeyboardInterrupt:
+			raise
 		except:
 			print ("didn't parse value")
 		return valArr
@@ -99,6 +101,7 @@ class Scale:
 		msg = "I {0} {1} {2} {3}".format(index, color[0], color[1], color[2])
 		#print (msg)
 		self.port.write(msg.encode())
+               
 		
 	def startCalibration ( self ):
 		self.calibratingScale = 0
